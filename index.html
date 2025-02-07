@@ -59,6 +59,10 @@
     <div id="energyBarContainer">
       <div id="energyBar"></div>
     </div>
+    <!-- 정답/오답 후 나타나는 "다음문제" 버튼 -->
+    <div id="nextQuestionContainer" class="hidden">
+      <button id="nextQuestionButton">다음문제</button>
+    </div>
   </div>
 
   <!-- 종료 화면 -->
@@ -419,6 +423,9 @@
 
     // 문제 출력 함수
     function showQuestion() {
+      // 새 문제를 시작할 때 "다음문제" 버튼 숨김
+      document.getElementById("nextQuestionContainer").classList.add("hidden");
+
       if (currentQuestionIndex >= questions.length) {
         currentQuestionIndex = 0;
         shuffleArray(questions);
@@ -435,30 +442,33 @@
       document.getElementById("options").innerHTML = optsHTML;
       MathJax.typeset();
 
+      // 옵션 버튼 클릭 이벤트 처리
       const optionButtons = document.querySelectorAll(".optionButton");
       optionButtons.forEach(button => {
         button.onclick = () => {
           clearInterval(questionTimer);
           clearInterval(energyInterval);
-          // data-option 속성을 이용해 정답 비교
+          // 답변 후 다른 옵션 버튼들 비활성화
+          optionButtons.forEach(b => b.disabled = true);
           if (button.getAttribute("data-option") === q.answer) {
             score += difficultyPoints;
             document.getElementById("score").innerText = "점수: " + score;
-            currentQuestionIndex++;
-            showQuestion();
+            alert("정답입니다!");
           } else {
             alert("오답입니다. 정답: " + q.answer + "\n" + q.explanation);
             chances--;
             document.getElementById("chances").innerText = "남은 기회: " + chances;
             if (chances <= 0) {
               endGame();
-            } else {
-              currentQuestionIndex++;
-              showQuestion();
+              return;
             }
           }
+          // 정답/오답 후 "다음문제" 버튼 보이기
+          document.getElementById("nextQuestionContainer").classList.remove("hidden");
         };
       });
+
+      // 에너지바 애니메이션 시작
       startEnergyBar();
       if (timeLimitPerQuestion !== Infinity) {
         let timeRemaining = timeLimitPerQuestion;
@@ -470,12 +480,15 @@
             alert("시간 초과! 정답: " + q.answer + "\n" + q.explanation);
             chances--;
             document.getElementById("chances").innerText = "남은 기회: " + chances;
+            // 시간 초과 시 옵션 버튼들 비활성화
+            const optionButtons = document.querySelectorAll(".optionButton");
+            optionButtons.forEach(b => b.disabled = true);
             if (chances <= 0) {
               endGame();
-            } else {
-              currentQuestionIndex++;
-              showQuestion();
+              return;
             }
+            // 시간 초과 후 "다음문제" 버튼 보이기
+            document.getElementById("nextQuestionContainer").classList.remove("hidden");
           }
         }, 1000);
       }
@@ -544,6 +557,14 @@
     document.getElementById("submitScoreButton").addEventListener("click", () => {
       const name = document.getElementById("playerName").value.trim();
       saveData("단항식과 다항식의 계산 빈출유형(1)", name, score, totalTimeElapsed);
+    });
+
+    // "다음문제" 버튼 이벤트 (정답/오답 후에만 작동)
+    document.getElementById("nextQuestionButton").addEventListener("click", () => {
+      // "다음문제" 버튼 숨기고 다음 문제로 넘어감
+      document.getElementById("nextQuestionContainer").classList.add("hidden");
+      currentQuestionIndex++;
+      showQuestion();
     });
   </script>
 </body>
